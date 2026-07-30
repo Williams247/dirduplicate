@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# App runtime
+uploads/*
+!uploads/.gitkeep
+output/*
+!output/.gitkeep
+temp/*
+!temp/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/

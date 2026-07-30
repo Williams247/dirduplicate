@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Folder Duplicator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div class="bg-mesh" aria-hidden="true"></div>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <h1 class="brand-name">Folder Duplicator</h1>
+          <p class="brand-tag">Upload once. Multiply with smart renaming.</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button type="button" id="themeToggle" class="btn btn-ghost" aria-label="Toggle dark mode" title="Toggle theme">
+          <span class="theme-icon" aria-hidden="true"></span>
+          <span id="themeLabel">Dark</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- Upload panel -->
+      <section class="panel upload-panel" aria-labelledby="upload-heading">
+        <div class="panel-head">
+          <h2 id="upload-heading">Source Folder</h2>
+          <p class="panel-sub">Drag a folder here or browse to select one.</p>
+        </div>
+
+        <div
+          id="dropZone"
+          class="drop-zone"
+          role="button"
+          tabindex="0"
+          aria-label="Drop folder here or press Enter to browse"
+        >
+          <div class="drop-icon" aria-hidden="true">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <path d="M8 18V12a4 4 0 0 1 4-4h8l4 4h12a4 4 0 0 1 4 4v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <rect x="6" y="18" width="36" height="22" rx="4" stroke="currentColor" stroke-width="2"/>
+              <path d="M24 24v10M19 29l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <p class="drop-title">Drop folder here</p>
+          <p class="drop-hint">or</p>
+          <label class="btn btn-primary browse-label">
+            Browse Folder
+            <input
+              type="file"
+              id="folderInput"
+              webkitdirectory
+              directory
+              multiple
+              hidden
+              aria-label="Browse folder"
+            />
+          </label>
+        </div>
+
+        <div id="uploadStatus" class="upload-status" hidden>
+          <div class="stat-grid">
+            <div class="stat">
+              <span class="stat-label">Folder</span>
+              <span class="stat-value" id="statFolderName">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Files</span>
+              <span class="stat-value mono" id="statFileCount">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Original Size</span>
+              <span class="stat-value mono" id="statOriginalSize">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Free Disk</span>
+              <span class="stat-value mono" id="statFreeDisk">{{ free_disk }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Config + estimate -->
+      <section class="panel config-panel" aria-labelledby="config-heading">
+        <div class="panel-head">
+          <h2 id="config-heading">Duplication Settings</h2>
+          <p class="panel-sub">Estimates update instantly as you type.</p>
+        </div>
+
+        <form id="dupForm" class="config-form" novalidate>
+          <div class="field">
+            <label for="copiesInput">Number of copies</label>
+            <input
+              type="number"
+              id="copiesInput"
+              name="copies"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              placeholder="e.g. 500"
+              disabled
+              required
+              aria-describedby="copiesError"
+            />
+            <p id="copiesError" class="field-error" role="alert" hidden></p>
+          </div>
+
+          <div class="field">
+            <label for="outputSubdir">
+              Output subfolder
+              <span class="label-hint">(under server output directory)</span>
+            </label>
+            <input
+              type="text"
+              id="outputSubdir"
+              name="output_subdir"
+              placeholder="optional — defaults to job id"
+              disabled
+              autocomplete="off"
+            />
+            <p class="field-note">
+              Browsers cannot write to arbitrary local paths. Generated folders and
+              <code>Output.zip</code> are stored under the server’s
+              <code id="outputDirPath">{{ output_dir }}</code> directory.
+              Enter an optional subfolder name below that path.
+            </p>
+          </div>
+
+          <div class="estimate-grid" id="estimatePanel" aria-live="polite">
+            <div class="estimate">
+              <span class="estimate-label">Folders to create</span>
+              <span class="estimate-value mono" id="estFolders">0</span>
+            </div>
+            <div class="estimate">
+              <span class="estimate-label">Estimated Size</span>
+              <span class="estimate-value mono" id="estSize">0 B</span>
+            </div>
+            <div class="estimate">
+              <span class="estimate-label">Estimated ZIP Size</span>
+              <span class="estimate-value mono" id="estZip">0 B</span>
+            </div>
+          </div>
+
+          <p id="diskWarning" class="warning-banner" role="alert" hidden></p>
+
+          <div class="preview-block">
+            <h3>Live folder preview</h3>
+            <ul id="namePreview" class="name-preview" aria-label="Preview of generated folder names">
+              <li class="muted">Upload a folder to see renamed previews</li>
+            </ul>
+          </div>
+
+          <div class="actions">
+            <button type="submit" id="duplicateBtn" class="btn btn-primary" disabled>
+              Duplicate
+            </button>
+            <button type="button" id="cancelBtn" class="btn btn-danger" disabled>
+              Cancel
+            </button>
+            <a id="downloadBtn" class="btn btn-success" href="#" hidden aria-disabled="true">
+              Download ZIP
+            </a>
+          </div>
+        </form>
+      </section>
+
+      <!-- Progress -->
+      <section class="panel progress-panel" aria-labelledby="progress-heading">
+        <div class="panel-head">
+          <h2 id="progress-heading">Progress</h2>
+          <p class="panel-sub" id="statusLabel">Waiting for upload…</p>
+        </div>
+
+        <div class="progress-wrap" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressBar" aria-labelledby="progressPct">
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="progress-meta">
+            <span id="progressPct" class="mono">0%</span>
+            <span id="progressCount" class="mono">0 / 0 folders</span>
+          </div>
+        </div>
+
+        <dl class="metrics">
+          <div>
+            <dt>Current</dt>
+            <dd id="metricCurrent" class="mono">—</dd>
+          </div>
+          <div>
+            <dt>Speed</dt>
+            <dd id="metricSpeed" class="mono">—</dd>
+          </div>
+          <div>
+            <dt>Elapsed</dt>
+            <dd id="metricElapsed" class="mono">—</dd>
+          </div>
+          <div>
+            <dt>ETA</dt>
+            <dd id="metricEta" class="mono">—</dd>
+          </div>
+        </dl>
+      </section>
+    </main>
+
+    <div id="toastHost" class="toast-host" aria-live="polite" aria-relevant="additions"></div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
