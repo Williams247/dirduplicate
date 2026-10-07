@@ -44,7 +44,7 @@ Browsers cannot write to arbitrary paths on your machine. Generated folders and 
 
 | Original         | Copy 1             | Copy 2             |
 |------------------|--------------------|--------------------|
-| `joe_mead_100`   | `joe1_mead1_101`   | `joe2_mead2_102`   |
+| `pascal_babel_100`   | `pascal_babel1_101`   | `pascal_babel2_102`   |
 | `project_backup` | `project1_backup1` | `project2_backup2` |
 
 ## API
